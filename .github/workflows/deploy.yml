@@ -35,6 +35,6 @@ jobs:
         uses: BunnyWay/actions/container-update-image@main
         with:
           app_id: ${{ vars.BUNNY_APP_ID }}
-          api_key: ${{ secrets.BUNNY_API_KEY }}
+          api_key: ${{ secrets.BUNNYNET_API_KEY }}
           container: app
           image_tag: ${{ github.sha }}
