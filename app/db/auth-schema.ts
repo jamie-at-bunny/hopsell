@@ -1,11 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import {
-  sqliteTable,
-  text,
-  integer,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -22,15 +16,15 @@ export const user = sqliteTable("user", {
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).default(
-    false,
-  ),
-  stripeCustomerId: text("stripe_customer_id"),
-  timezone: text("timezone").default("UTC"),
-  appearance: text("appearance").default("system"),
-  defaultOrganizationId: text("default_organization_id"),
-  notifyInApp: integer("notify_in_app", { mode: "boolean" }).default(true),
-  notifyEmail: integer("notify_email", { mode: "boolean" }).default(true),
+  storagePrefix: text("storage_prefix").notNull(),
+  stripeAccountId: text("stripe_account_id"),
+  stripeAccountStatus: text("stripe_account_status"),
+  chargesEnabled: integer("charges_enabled", { mode: "boolean" })
+    .default(false)
+    .notNull(),
+  payoutsEnabled: integer("payouts_enabled", { mode: "boolean" })
+    .default(false)
+    .notNull(),
 });
 
 export const session = sqliteTable(
@@ -50,8 +44,6 @@ export const session = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    activeOrganizationId: text("active_organization_id"),
-    activeTeamId: text("active_team_id"),
   },
   (table) => [index("session_userId_idx").on(table.userId)],
 );
@@ -104,200 +96,16 @@ export const verification = sqliteTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const organization = sqliteTable(
-  "organization",
-  {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    slug: text("slug").notNull().unique(),
-    logo: text("logo"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    metadata: text("metadata"),
-    stripeCustomerId: text("stripe_customer_id"),
-  },
-  (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)],
-);
-
-export const team = sqliteTable(
-  "team",
-  {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).$onUpdate(
-      () => /* @__PURE__ */ new Date(),
-    ),
-  },
-  (table) => [index("team_organizationId_idx").on(table.organizationId)],
-);
-
-export const teamMember = sqliteTable(
-  "team_member",
-  {
-    id: text("id").primaryKey(),
-    teamId: text("team_id")
-      .notNull()
-      .references(() => team.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }),
-  },
-  (table) => [
-    index("teamMember_teamId_idx").on(table.teamId),
-    index("teamMember_userId_idx").on(table.userId),
-  ],
-);
-
-export const member = sqliteTable(
-  "member",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    role: text("role").default("member").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-  },
-  (table) => [
-    index("member_organizationId_idx").on(table.organizationId),
-    index("member_userId_idx").on(table.userId),
-  ],
-);
-
-export const invitation = sqliteTable(
-  "invitation",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    role: text("role"),
-    teamId: text("team_id"),
-    status: text("status").default("pending").notNull(),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    inviterId: text("inviter_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    index("invitation_organizationId_idx").on(table.organizationId),
-    index("invitation_email_idx").on(table.email),
-  ],
-);
-
-export const twoFactor = sqliteTable(
-  "two_factor",
-  {
-    id: text("id").primaryKey(),
-    secret: text("secret").notNull(),
-    backupCodes: text("backup_codes").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    index("twoFactor_secret_idx").on(table.secret),
-    index("twoFactor_userId_idx").on(table.userId),
-  ],
-);
-
-export const passkey = sqliteTable(
-  "passkey",
-  {
-    id: text("id").primaryKey(),
-    name: text("name"),
-    publicKey: text("public_key").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    credentialID: text("credential_id").notNull(),
-    counter: integer("counter").notNull(),
-    deviceType: text("device_type").notNull(),
-    backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
-    transports: text("transports"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }),
-    aaguid: text("aaguid"),
-  },
-  (table) => [
-    index("passkey_userId_idx").on(table.userId),
-    index("passkey_credentialID_idx").on(table.credentialID),
-  ],
-);
-
-export const ssoProvider = sqliteTable(
-  "sso_provider",
-  {
-    id: text("id").primaryKey(),
-    issuer: text("issuer").notNull(),
-    domain: text("domain").notNull(),
-    providerId: text("provider_id").notNull(),
-    oidcConfig: text("oidc_config"),
-    samlConfig: text("saml_config"),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id").references(() => organization.id, {
-      onDelete: "cascade",
-    }),
-    domainVerified: integer("domain_verified", { mode: "boolean" }).default(
-      false,
-    ),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [
-    index("ssoProvider_userId_idx").on(table.userId),
-    index("ssoProvider_organizationId_idx").on(table.organizationId),
-    index("ssoProvider_domain_idx").on(table.domain),
-  ],
-);
-
-export const subscription = sqliteTable("subscription", {
+export const rateLimit = sqliteTable("rate_limit", {
   id: text("id").primaryKey(),
-  plan: text("plan").notNull(),
-  referenceId: text("reference_id").notNull(),
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
-  status: text("status").default("incomplete"),
-  periodStart: integer("period_start", { mode: "timestamp_ms" }),
-  periodEnd: integer("period_end", { mode: "timestamp_ms" }),
-  trialStart: integer("trial_start", { mode: "timestamp_ms" }),
-  trialEnd: integer("trial_end", { mode: "timestamp_ms" }),
-  cancelAtPeriodEnd: integer("cancel_at_period_end", {
-    mode: "boolean",
-  }).default(false),
-  cancelAt: integer("cancel_at", { mode: "timestamp_ms" }),
-  canceledAt: integer("canceled_at", { mode: "timestamp_ms" }),
-  endedAt: integer("ended_at", { mode: "timestamp_ms" }),
-  seats: integer("seats"),
-  billingInterval: text("billing_interval"),
-  stripeScheduleId: text("stripe_schedule_id"),
+  key: text("key").notNull(),
+  count: integer("count").notNull(),
+  lastRequest: integer("last_request").notNull(),
 });
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
-  teamMembers: many(teamMember),
-  members: many(member),
-  invitations: many(invitation),
-  twoFactors: many(twoFactor),
-  passkeys: many(passkey),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -313,192 +121,3 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }));
-
-export const organizationRelations = relations(organization, ({ many }) => ({
-  teams: many(team),
-  members: many(member),
-  invitations: many(invitation),
-}));
-
-export const teamRelations = relations(team, ({ one, many }) => ({
-  organization: one(organization, {
-    fields: [team.organizationId],
-    references: [organization.id],
-  }),
-  teamMembers: many(teamMember),
-}));
-
-export const teamMemberRelations = relations(teamMember, ({ one }) => ({
-  team: one(team, {
-    fields: [teamMember.teamId],
-    references: [team.id],
-  }),
-  user: one(user, {
-    fields: [teamMember.userId],
-    references: [user.id],
-  }),
-}));
-
-export const memberRelations = relations(member, ({ one }) => ({
-  organization: one(organization, {
-    fields: [member.organizationId],
-    references: [organization.id],
-  }),
-  user: one(user, {
-    fields: [member.userId],
-    references: [user.id],
-  }),
-}));
-
-export const invitationRelations = relations(invitation, ({ one }) => ({
-  organization: one(organization, {
-    fields: [invitation.organizationId],
-    references: [organization.id],
-  }),
-  user: one(user, {
-    fields: [invitation.inviterId],
-    references: [user.id],
-  }),
-}));
-
-export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
-  user: one(user, {
-    fields: [twoFactor.userId],
-    references: [user.id],
-  }),
-}));
-
-export const passkeyRelations = relations(passkey, ({ one }) => ({
-  user: one(user, {
-    fields: [passkey.userId],
-    references: [user.id],
-  }),
-}));
-
-export const ssoProviderRelations = relations(ssoProvider, ({ one }) => ({
-  user: one(user, {
-    fields: [ssoProvider.userId],
-    references: [user.id],
-  }),
-  organization: one(organization, {
-    fields: [ssoProvider.organizationId],
-    references: [organization.id],
-  }),
-}));
-
-export const inviteLink = sqliteTable(
-  "invite_link",
-  {
-    id: text("id").primaryKey(),
-    token: text("token").notNull().unique(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    role: text("role").default("member").notNull(),
-    name: text("name"),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    createdBy: text("created_by")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    usedCount: integer("used_count").default(0).notNull(),
-  },
-  (table) => [
-    index("inviteLink_organizationId_idx").on(table.organizationId),
-    index("inviteLink_token_idx").on(table.token),
-  ],
-);
-
-export const inviteLinkRelations = relations(inviteLink, ({ one }) => ({
-  organization: one(organization, {
-    fields: [inviteLink.organizationId],
-    references: [organization.id],
-  }),
-  creator: one(user, {
-    fields: [inviteLink.createdBy],
-    references: [user.id],
-  }),
-}));
-
-export const auditLog = sqliteTable(
-  "audit_log",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    actorId: text("actor_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    action: text("action").notNull(),
-    targetType: text("target_type"),
-    targetId: text("target_id"),
-    metadata: text("metadata"),
-    ipAddress: text("ip_address"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-  },
-  (table) => [
-    index("auditLog_organizationId_idx").on(table.organizationId),
-    index("auditLog_actorId_idx").on(table.actorId),
-    index("auditLog_createdAt_idx").on(table.createdAt),
-  ],
-);
-
-export const auditLogRelations = relations(auditLog, ({ one }) => ({
-  organization: one(organization, {
-    fields: [auditLog.organizationId],
-    references: [organization.id],
-  }),
-  actor: one(user, {
-    fields: [auditLog.actorId],
-    references: [user.id],
-  }),
-}));
-
-export const notification = sqliteTable(
-  "notification",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id").references(() => organization.id, {
-      onDelete: "cascade",
-    }),
-    type: text("type").notNull(),
-    title: text("title").notNull(),
-    body: text("body"),
-    link: text("link"),
-    read: integer("read", { mode: "boolean" }).default(false).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-  },
-  (table) => [
-    index("notification_userId_idx").on(table.userId),
-    index("notification_userId_read_idx").on(table.userId, table.read),
-    index("notification_createdAt_idx").on(table.createdAt),
-  ],
-);
-
-export const notificationRelations = relations(notification, ({ one }) => ({
-  user: one(user, {
-    fields: [notification.userId],
-    references: [user.id],
-  }),
-  organization: one(organization, {
-    fields: [notification.organizationId],
-    references: [organization.id],
-  }),
-}));
-
-export const rateLimit = sqliteTable("rate_limit", {
-  id: text("id").primaryKey(),
-  key: text("key").notNull(),
-  count: integer("count").notNull(),
-  lastRequest: integer("last_request").notNull(),
-});

@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/components";
 import { db } from "~/db/index.server";
 import { emailLog } from "~/db/email-log-schema";
-import { config } from "~/lib/config";
+import { serverConfig } from "~/lib/server-config.server";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -25,7 +25,7 @@ export async function sendEmail({ to, subject, react }: SendEmailOptions) {
   }
 
   const { data, error } = await resend.emails.send({
-    from: config.emailFrom,
+    from: serverConfig.emailFrom,
     to,
     subject,
     react,

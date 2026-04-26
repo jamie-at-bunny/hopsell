@@ -1,32 +1,21 @@
-import {
-  type RouteConfig,
-  index,
-  route,
-  layout,
-} from "@react-router/dev/routes";
+import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
-  index("routes/home.tsx"),
-  route("api/auth/*", "routes/api.auth.$.ts"),
-  route("api/upload", "routes/api.upload.ts"),
-  route("api/emails", "routes/api.emails.ts"),
-  route("api/billing", "routes/api.billing.ts"),
-  route("api/audit-log", "routes/api.audit-log.ts"),
-  route("api/audit", "routes/api.audit.ts"),
-  route("api/health", "routes/api.health.ts"),
-  route("api/notifications/stream", "routes/api.notifications.stream.ts"),
-  route("api/webhooks/resend", "routes/api.webhooks.resend.ts"),
-  route("invite/:token", "routes/invite.$token.tsx"),
+  index("routes/_index.tsx"),
   route("login", "routes/login.tsx"),
-  route("signup", "routes/signup.tsx"),
-  route("forgot-password", "routes/forgot-password.tsx"),
-  route("onboarding", "routes/onboarding.tsx"),
-  route("home", "routes/home-page.tsx"),
-  route("account", "routes/account.tsx"),
-  route(":slug", "routes/workspace.tsx", [
-    index("routes/workspace-index.tsx"),
-    route("settings", "routes/workspace-settings.tsx"),
-    route("example-members-only", "routes/workspace-example-members-only.tsx"),
-    route("example-admin-only", "routes/workspace-example-admin-only.tsx"),
-  ]),
+  route("dashboard", "routes/dashboard.tsx"),
+  route("library", "routes/library.tsx"),
+  route("p/:slug", "routes/p.$slug.tsx"),
+  route("p/:slug/thanks", "routes/p.$slug.thanks.tsx"),
+  route("d/:token", "routes/d.$token.tsx"),
+  route("listings/verify", "routes/listings.verify.tsx"),
+
+  route("api/auth/*", "routes/api.auth.$.ts"),
+  route("api/health", "routes/api.health.ts"),
+  route("api/checkout/:productId", "routes/api.checkout.$productId.ts"),
+  route("api/products/:id/connect", "routes/api.products.$id.connect.ts"),
+  route("api/webhooks/stripe", "routes/api.webhooks.stripe.ts"),
+  route("api/webhooks/stripe-connect", "routes/api.webhooks.stripe-connect.ts"),
+
+  route(".bunny/upload", "routes/_bunny.upload.ts"),
 ] satisfies RouteConfig;

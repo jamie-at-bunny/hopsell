@@ -3,21 +3,36 @@ import * as React from "react";
 import { EmailLayout, styles } from "./components/layout";
 
 interface WelcomeProps {
-  name: string;
-  url: string;
+  productTitle: string;
+  productUrl: string;
+  connectUrl: string;
 }
 
-export default function Welcome({ name, url }: WelcomeProps) {
+export default function Welcome({
+  productTitle,
+  productUrl,
+  connectUrl,
+}: WelcomeProps) {
   return (
-    <EmailLayout preview={`Welcome to LaunchMade, ${name}`}>
-      <Heading style={styles.heading}>Welcome to LaunchMade</Heading>
-      <Text style={styles.paragraph}>Hi {name},</Text>
+    <EmailLayout preview={`Welcome to Hopsell — ${productTitle}`}>
+      <Heading style={styles.heading}>Welcome to Hopsell</Heading>
       <Text style={styles.paragraph}>
-        Thanks for signing up. Your account is ready to go.
+        Your page for <strong>{productTitle}</strong> is set up. We sent you to
+        Stripe to connect your bank — once that&apos;s done, your page goes
+        live automatically.
       </Text>
-      <Button style={styles.button} href={url}>
-        Get started
+      <Text style={styles.paragraph}>
+        Didn&apos;t finish? Pick up where you left off:
+      </Text>
+      <Button style={styles.button} href={connectUrl}>
+        Continue setup
       </Button>
+      <Text style={styles.subtle}>
+        Save this link to find your page anytime:{" "}
+        <a href={productUrl} style={{ color: "#0a0a0a" }}>
+          {productUrl}
+        </a>
+      </Text>
     </EmailLayout>
   );
 }

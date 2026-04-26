@@ -1,80 +1,94 @@
-import { redirect, data } from "react-router";
-import { authClient, signIn } from "~/lib/auth-client";
-import { AuthCard } from "~/components/auth-card";
-import { LoginForm } from "~/components/login-form";
+import { useState } from "react";
+import { Link, useFetcher } from "react-router";
 import type { Route } from "./+types/login";
+import { auth } from "~/lib/auth.server";
+import { authClient } from "~/lib/auth-client";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { config } from "~/lib/config";
 
 export function meta() {
-  return [{ title: "Login" }];
+  return [{ title: `Sign in to ${config.name}` }];
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (session) {
+    return Response.redirect(new URL("/dashboard", request.url), 302);
+  }
+  return null;
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
-  const intent = String(formData.get("intent"));
-  const redirectTo = String(formData.get("redirectTo") || "/");
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  if (!email) return { error: "Email required" };
 
-  if (intent === "send-otp") {
-    const email = String(formData.get("email"));
-    const { error } = await authClient.emailOtp.sendVerificationOtp({
-      email,
-      type: "sign-in",
-    });
+  const callbackURL = String(formData.get("callbackURL") || "/dashboard");
 
-    if (error) {
-      return data({ error: error.message || "Failed to send code" }, { status: 400 });
-    }
-
-    return { step: "otp" as const };
+  const { error } = await authClient.signIn.magicLink({ email, callbackURL });
+  if (error) {
+    return { error: error.message || "Failed to send sign-in link" };
   }
 
-  if (intent === "verify-otp") {
-    const email = String(formData.get("email"));
-    const otp = String(formData.get("otp"));
-    const { error } = await authClient.signIn.emailOtp({ email, otp });
-
-    if (error) {
-      return data({ error: error.message || "Invalid code" }, { status: 400 });
-    }
-
-    throw redirect(redirectTo);
-  }
-
-  if (intent === "password") {
-    const email = String(formData.get("email"));
-    const password = String(formData.get("password"));
-    const { error } = await signIn.email({ email, password });
-
-    if (error) {
-      return data({ error: error.message || "Invalid email or password" }, { status: 400 });
-    }
-
-    throw redirect(redirectTo);
-  }
-
-  if (intent === "sso") {
-    const email = String(formData.get("email"));
-    const { error } = await (authClient as any).sso.signIn({
-      email,
-      callbackURL: redirectTo,
-    });
-
-    if (error) {
-      return data({ error: error.message || "SSO sign-in failed. No SSO provider found for this email." }, { status: 400 });
-    }
-
-    return { step: "sso-redirect" as const };
-  }
-
-  return data({ error: "Invalid intent" }, { status: 400 });
+  return { sent: true, email };
 }
 
 export default function LoginPage() {
+  const fetcher = useFetcher<typeof clientAction>();
+  const [email, setEmail] = useState("");
+
+  if (fetcher.data && "sent" in fetcher.data && fetcher.data.sent) {
+    return (
+      <main className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
+        <h1 className="text-2xl font-semibold">Check your email</h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          We sent a sign-in link to{" "}
+          <span className="text-foreground font-medium">
+            {fetcher.data.email}
+          </span>
+          . Click it to finish signing in.
+        </p>
+      </main>
+    );
+  }
+
+  const error =
+    fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
+
   return (
-    <AuthCard
-      title="Login to your account"
-      description="Enter your email and we'll send you a login code"
-    >
-      <LoginForm />
-    </AuthCard>
+    <main className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
+      <h1 className="text-2xl font-semibold">Sign in to {config.name}</h1>
+      <p className="text-muted-foreground mt-2 text-sm">
+        Enter your email and we&apos;ll send you a sign-in link.
+      </p>
+
+      <fetcher.Form method="post" className="mt-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        {error && <p className="text-destructive text-sm">{error}</p>}
+        <Button type="submit" disabled={fetcher.state !== "idle"}>
+          {fetcher.state !== "idle" ? "Sending…" : "Send sign-in link"}
+        </Button>
+      </fetcher.Form>
+
+      <p className="text-muted-foreground mt-6 text-center text-sm">
+        New here?{" "}
+        <Link to="/" className="text-foreground underline">
+          Drop a file to start selling
+        </Link>
+      </p>
+    </main>
   );
 }

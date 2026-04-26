@@ -24,7 +24,7 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
         <Container style={container}>
           <Section style={content}>{children}</Section>
           <Hr style={hr} />
-          <Text style={footer}>LaunchMade</Text>
+          <Text style={footer}>Hopsell · Sell any file. Keep 95%.</Text>
         </Container>
       </Body>
     </Html>
@@ -88,18 +88,5 @@ export const styles = {
     display: "block",
     padding: "12px 24px",
     marginTop: "16px",
-  },
-  codeContainer: {
-    background: "#f4f4f5",
-    borderRadius: "8px",
-    padding: "16px 0",
-    marginTop: "16px",
-  },
-  code: {
-    fontSize: "32px",
-    fontWeight: "bold" as const,
-    letterSpacing: "6px",
-    color: "#0a0a0a",
-    textAlign: "center" as const,
   },
 };
