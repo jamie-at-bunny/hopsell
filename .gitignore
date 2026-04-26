@@ -1,0 +1,19 @@
+.DS_Store
+.env
+/node_modules/
+
+# Uploads (dev)
+/public/uploads/
+
+# Database
+*.db
+*.db-journal
+
+# Drizzle
+/drizzle/
+
+# React Router
+/.react-router/
+/build/
+.vercel
+.env*.local
