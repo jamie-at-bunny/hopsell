@@ -69,14 +69,14 @@ body {
 }
 
 :root {
-  /* Hopsell tokens — light */
-  --hop-bg: oklch(0.99 0.002 90);
+  /* Hopsell tokens, light (pure neutral, no hue) */
+  --hop-bg: oklch(1 0 0);
   --hop-surface: oklch(1 0 0);
-  --hop-border: oklch(0.92 0.004 90);
-  --hop-text: oklch(0.16 0.012 90);
-  --hop-muted: oklch(0.55 0.012 90);
-  --hop-hover: oklch(0.96 0.004 90);
-  --hop-accent: oklch(0.72 0.18 38); /* warm orange — used sparingly */
+  --hop-border: oklch(0.92 0 0);
+  --hop-text: oklch(0.16 0 0);
+  --hop-muted: oklch(0.55 0 0);
+  --hop-hover: oklch(0.96 0 0);
+  --hop-accent: var(--hop-text); /* monochrome: accent collapses onto text */
 
   /* shadcn tokens stay aligned */
   --background: var(--hop-bg);
@@ -114,14 +114,14 @@ body {
 }
 
 .dark {
-  /* Hopsell tokens — dark */
-  --hop-bg: oklch(0.14 0.012 90);
-  --hop-surface: oklch(0.18 0.012 90);
-  --hop-border: oklch(0.26 0.012 90);
-  --hop-text: oklch(0.97 0.004 90);
-  --hop-muted: oklch(0.65 0.012 90);
-  --hop-hover: oklch(0.22 0.012 90);
-  --hop-accent: oklch(0.74 0.18 38);
+  /* Hopsell tokens, dark (pure neutral, no hue) */
+  --hop-bg: oklch(0.14 0 0);
+  --hop-surface: oklch(0.18 0 0);
+  --hop-border: oklch(0.26 0 0);
+  --hop-text: oklch(0.97 0 0);
+  --hop-muted: oklch(0.65 0 0);
+  --hop-hover: oklch(0.22 0 0);
+  --hop-accent: var(--hop-text);
 
   --background: var(--hop-bg);
   --foreground: var(--hop-text);

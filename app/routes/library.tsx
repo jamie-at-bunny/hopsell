@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/button";
 import { config } from "~/lib/config";
 
 export function meta() {
-  return [{ title: `Library — ${config.name}` }];
+  return [{ title: `Library · ${config.name}` }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -73,7 +73,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 function formatBytes(bytes: number): string {
-  if (!bytes) return "—";
+  if (!bytes) return "·";
   const units = ["B", "KB", "MB", "GB"];
   let v = bytes;
   let i = 0;
@@ -85,7 +85,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(d: Date | null) {
-  if (!d) return "—";
+  if (!d) return "·";
   return new Date(d).toLocaleDateString("en-GB", {
     year: "numeric",
     month: "short",
@@ -97,7 +97,7 @@ export default function Library({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-12">
+    <main className="container mx-auto max-w-3xl px-4 pt-24 pb-12">
       <h1 className="text-2xl font-semibold tracking-tight">Your library</h1>
       <p className="text-hop-muted mt-1 text-sm">
         Everything you&apos;ve bought on {config.name}.

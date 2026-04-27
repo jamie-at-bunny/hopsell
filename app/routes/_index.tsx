@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -20,6 +19,8 @@ import { products, pendingListings } from "~/db/marketplace-schema";
 import { generateSlug, uniqueSlug } from "~/lib/slug.server";
 import { sendEmail } from "~/lib/email.server";
 import { createOnboardingLink } from "~/lib/stripe-connect.server";
+import { getDailyBackground } from "~/lib/unsplash.server";
+import type { DailyBackground } from "~/lib/unsplash.server";
 import { config } from "~/lib/config";
 import React from "react";
 import Welcome from "~/emails/welcome";
@@ -28,37 +29,76 @@ import { SellFlow } from "~/components/sell-flow";
 
 export function meta() {
   return [
-    { title: `${config.name} — ${config.tagline}` },
+    { title: `${config.name} · ${config.tagline}` },
     {
       name: "description",
-      content: "Drop a file, set a price, share a link.",
+      content:
+        "Drop a file. Set a price. Get paid. 5% + Stripe fees. No subscription.",
     },
   ];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (session) return { isAuthenticated: true };
+  const background = await getDailyBackground();
+
+  if (session) return { isAuthenticated: true, background };
 
   const { value, isNew } = getOrIssuePreAuth(request);
   if (isNew) {
-    return new Response(JSON.stringify({ isAuthenticated: false }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Set-Cookie": preAuthSetCookie(value),
+    return new Response(
+      JSON.stringify({ isAuthenticated: false, background }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Set-Cookie": preAuthSetCookie(value),
+        },
       },
-    });
+    );
   }
-  return { isAuthenticated: false };
+  return { isAuthenticated: false, background };
 }
 
 const ALLOWED_EXTENSIONS = new Set([
-  "pdf", "epub", "mobi", "txt", "md", "docx", "xlsx", "csv", "pptx", "odt",
-  "zip", "tar", "gz", "7z", "rar",
-  "png", "jpg", "jpeg", "gif", "webp", "svg", "psd", "ai", "sketch", "fig",
-  "mp3", "wav", "flac", "ogg", "mp4", "mov", "webm",
-  "json", "xml", "html", "css", "js", "ts",
+  "pdf",
+  "epub",
+  "mobi",
+  "txt",
+  "md",
+  "docx",
+  "xlsx",
+  "csv",
+  "pptx",
+  "odt",
+  "zip",
+  "tar",
+  "gz",
+  "7z",
+  "rar",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "svg",
+  "psd",
+  "ai",
+  "sketch",
+  "fig",
+  "mp3",
+  "wav",
+  "flac",
+  "ogg",
+  "mp4",
+  "mov",
+  "webm",
+  "json",
+  "xml",
+  "html",
+  "css",
+  "js",
+  "ts",
 ]);
 
 const formSchema = z.object({
@@ -69,7 +109,10 @@ const formSchema = z.object({
     .refine((n) => Number.isFinite(n) && n >= 0.5, {
       message: "Price must be at least £0.50",
     }),
-  email: z.string().email().transform((v) => v.toLowerCase().trim()),
+  email: z
+    .string()
+    .email()
+    .transform((v) => v.toLowerCase().trim()),
   description: z
     .string()
     .max(2000)
@@ -243,59 +286,91 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
+  const { background } = loaderData;
   return (
     <main className="text-hop-text">
-      <section className="relative overflow-hidden pt-12 pb-24">
-        <div
-          className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_50%_at_50%_30%,black_20%,transparent_100%)]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, var(--color-hop-muted) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-            opacity: 0.18,
-          }}
-        />
-        <div className="relative mx-auto max-w-[640px] px-6">
+      <section className="relative isolate flex min-h-screen items-center overflow-hidden">
+        {background ? (
+          <HeroBackdrop background={background} />
+        ) : (
+          <HeroFallback />
+        )}
+        <div className="relative mx-auto w-full max-w-[640px] px-6 py-16">
           <div className="mb-10 text-center">
-            <h1 className="mx-auto mb-4 max-w-[20ch] text-[clamp(2.2rem,5vw,3.4rem)] font-semibold tracking-tight text-balance">
+            <h1 className="mx-auto mb-4 max-w-[20ch] text-[clamp(2.4rem,5.5vw,3.8rem)] font-semibold tracking-tight text-balance">
               Sell any file.
             </h1>
-            <p className="text-hop-muted mx-auto max-w-[440px] text-[0.9375rem] text-pretty">
-              Drop a file, set a price, share a link.
+            <p className="text-hop-muted mx-auto max-w-[460px] text-[0.9375rem] text-pretty">
+              Drop a file. Set a price. Get paid.
             </p>
           </div>
 
           <SellFlow />
 
           <p className="text-hop-muted mt-6 text-center text-[0.75rem]">
-            Free to list · 5% commission per sale · no subscription
+            Stripe processing fee + 5%
           </p>
 
-          <p className="text-hop-muted mt-12 text-center text-sm">
-            {loaderData.isAuthenticated ? (
-              <>
-                Already selling?{" "}
-                <Link
-                  to="/dashboard"
-                  className="text-hop-text underline underline-offset-4"
-                >
-                  Open your dashboard
-                </Link>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-hop-text underline underline-offset-4"
-                >
-                  Sign in
-                </Link>
-              </>
-            )}
-          </p>
         </div>
       </section>
     </main>
   );
 }
+
+function HeroBackdrop({ background }: { background: DailyBackground }) {
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <img
+          src={background.imageUrl}
+          alt=""
+          className="size-full object-cover"
+          loading="eager"
+          fetchPriority="high"
+        />
+        {/* Soften the photo behind the form and dissolve into the white below. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/40 to-white" />
+      </div>
+      <p className="text-hop-muted absolute right-4 bottom-3 z-10 text-[0.625rem] tracking-tight">
+        Photo by{" "}
+        <a
+          href={background.photographerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-hop-text underline underline-offset-2 transition-colors"
+        >
+          {background.photographerName}
+        </a>{" "}
+        on{" "}
+        <a
+          href={background.photoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-hop-text underline underline-offset-2 transition-colors"
+        >
+          Unsplash
+        </a>
+      </p>
+    </>
+  );
+}
+
+function HeroFallback() {
+  // No UNSPLASH_ACCESS_KEY set: use a daily-seeded Picsum placeholder so the
+  // page never looks empty. Add the env var to switch to real Unsplash photos.
+  const today = new Date().toISOString().slice(0, 10);
+  const placeholderUrl = `https://picsum.photos/seed/hopsell-${today}/1920/1080`;
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <img
+        src={placeholderUrl}
+        alt=""
+        className="size-full object-cover"
+        loading="eager"
+        fetchPriority="high"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/40 to-white" />
+    </div>
+  );
+}
+

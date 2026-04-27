@@ -41,7 +41,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-12">
+    <main className="container mx-auto max-w-3xl px-4 pt-24 pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Your products</h1>

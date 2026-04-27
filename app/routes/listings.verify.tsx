@@ -14,7 +14,7 @@ import {
 import { config } from "~/lib/config";
 
 export function meta() {
-  return [{ title: `Confirm listing — ${config.name}` }];
+  return [{ title: `Confirm listing · ${config.name}` }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

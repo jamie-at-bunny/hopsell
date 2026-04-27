@@ -10,7 +10,7 @@ const baseURL = () =>
  * Synthesise a signed Better Auth session for the given email by
  * pre-creating a magic-link verification row, then calling
  * `auth.handler` against the verify URL. The returned Response carries
- * the Set-Cookie session header — copy it onto your final redirect.
+ * the Set-Cookie session header. Copy it onto your final redirect.
  *
  * The user must already exist (or be creatable by Better Auth's
  * magic-link verify flow). For Hopsell we always pre-create the user

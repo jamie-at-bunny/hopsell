@@ -14,12 +14,11 @@ export default function Welcome({
   connectUrl,
 }: WelcomeProps) {
   return (
-    <EmailLayout preview={`Welcome to Hopsell — ${productTitle}`}>
+    <EmailLayout preview={`Welcome to Hopsell · ${productTitle}`}>
       <Heading style={styles.heading}>Welcome to Hopsell</Heading>
       <Text style={styles.paragraph}>
-        Your page for <strong>{productTitle}</strong> is set up. We sent you to
-        Stripe to connect your bank — once that&apos;s done, your page goes
-        live automatically.
+        Your page for <strong>{productTitle}</strong> is set up. Connect your
+        bank with Stripe and your page goes live automatically.
       </Text>
       <Text style={styles.paragraph}>
         Didn&apos;t finish? Pick up where you left off:

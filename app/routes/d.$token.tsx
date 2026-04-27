@@ -7,7 +7,7 @@ import { getDownloadUrl } from "~/lib/bunny-download.server";
 import { config } from "~/lib/config";
 
 export function meta() {
-  return [{ title: `Download — ${config.name}` }];
+  return [{ title: `Download · ${config.name}` }];
 }
 
 export async function loader({ params }: Route.LoaderArgs) {

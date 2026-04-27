@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import type { Route } from "./+types/p.$slug.thanks";
 import { db } from "~/db/index.server";
 import { products, orders } from "~/db/marketplace-schema";
+import { reconcileCheckoutSessionById } from "~/lib/stripe-checkout.server";
 import { buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import { config } from "~/lib/config";
@@ -15,7 +16,7 @@ function formatPrice(cents: number, currency: string): string {
 }
 
 export function meta() {
-  return [{ title: `Thanks — ${config.name}` }];
+  return [{ title: `Thanks · ${config.name}` }];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
@@ -32,12 +33,22 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const order = await db.query.orders.findFirst({
+  let order = await db.query.orders.findFirst({
     where: and(
       eq(orders.stripeSessionId, sessionId),
       eq(orders.productId, product.id),
     ),
   });
+
+  if (!order) {
+    await reconcileCheckoutSessionById(sessionId);
+    order = await db.query.orders.findFirst({
+      where: and(
+        eq(orders.stripeSessionId, sessionId),
+        eq(orders.productId, product.id),
+      ),
+    });
+  }
 
   return {
     product: {
@@ -60,14 +71,14 @@ export default function ThanksPage({ loaderData }: Route.ComponentProps) {
   const { product, order } = loaderData;
 
   return (
-    <main className="text-hop-text mx-auto flex min-h-[80vh] max-w-md flex-col px-4 py-12">
+    <main className="text-hop-text mx-auto flex min-h-[80vh] max-w-md flex-col px-4 pt-24 pb-12">
       <section className="bg-hop-surface border-hop-border flex flex-1 flex-col items-center justify-center rounded-2xl border p-8 text-center">
         <h1 className="text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-tight text-balance">
           {product.title}
         </h1>
 
-        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[0.6875rem] font-semibold tracking-wider text-emerald-700 uppercase">
-          <span className="size-1.5 rounded-full bg-emerald-500" />
+        <span className="bg-hop-hover text-hop-text mt-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold tracking-wider uppercase">
+          <span className="bg-hop-text size-1.5 rounded-full" />
           Paid
         </span>
 
@@ -97,7 +108,7 @@ export default function ThanksPage({ loaderData }: Route.ComponentProps) {
           {order ? (
             <>Receipt sent to {order.buyerEmail}</>
           ) : (
-            <>Finalising your order — refresh in a few seconds.</>
+            <>Finalising your order. Refresh in a few seconds.</>
           )}
         </p>
       </section>

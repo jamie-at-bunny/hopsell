@@ -25,8 +25,8 @@ export default function Sale({
         Buyer: {buyerEmail}
       </Text>
       <Text style={styles.subtle}>
-        Stripe handles the payout — funds will land in your bank on your
-        regular schedule.
+        Stripe handles the payout. Funds land in your bank on your regular
+        schedule.
       </Text>
     </EmailLayout>
   );

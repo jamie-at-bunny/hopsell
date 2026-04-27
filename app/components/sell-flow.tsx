@@ -92,29 +92,59 @@ export function SellFlow() {
 
         return (
           <>
-            <div
-              {...getDropzoneProps()}
-              onClick={openFilePicker}
-              className={`bg-hop-surface border-hop-border hover:bg-hop-hover relative cursor-pointer rounded-2xl border-2 border-dashed p-12 text-center transition-colors sm:p-16 ${
-                isDragOver ? "border-hop-text bg-hop-hover" : ""
-              }`}
-            >
-              <input {...getInputProps()} />
-              <p className="text-hop-text text-2xl font-semibold tracking-tight">
-                {isDragOver ? "Drop it here" : "📎 Drop a file to start"}
-              </p>
-              <p className="text-hop-muted mt-2 text-sm">
-                Up to 2 GB · PDF, ZIP, audio, video, images, code & more
-              </p>
+            <input {...getInputProps()} className="sr-only" />
+
+            <div className="relative">
+              <div
+                aria-hidden="true"
+                className="bg-hop-surface ring-hop-border absolute -top-4 left-1/2 h-4 w-[calc(100%-4rem)] -translate-x-1/2 rounded-t-2xl ring-1"
+              />
+              <div
+                aria-hidden="true"
+                className="bg-hop-surface ring-hop-border absolute -top-2 left-1/2 h-4 w-[calc(100%-2rem)] -translate-x-1/2 rounded-t-2xl ring-1"
+              />
+              <div
+                {...getDropzoneProps()}
+                onClick={openFilePicker}
+                className={`bg-hop-surface ring-hop-border relative cursor-pointer rounded-2xl p-10 text-center shadow-md ring-1 transition-all sm:p-12 ${
+                  isDragOver ? "ring-hop-text bg-hop-hover ring-2" : ""
+                }`}
+              >
+                <div className="text-3xl" aria-hidden="true">
+                  📎
+                </div>
+                <p className="mt-3 text-2xl font-semibold tracking-tight">
+                  {isDragOver ? "Drop it here" : "Drop your file"}
+                </p>
+                <p className="text-hop-muted mt-1 text-sm">
+                  We turn it into a product page in seconds.
+                </p>
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openFilePicker();
+                  }}
+                  className="mt-5 rounded-full px-6"
+                >
+                  Choose a file
+                </Button>
+              </div>
             </div>
 
             <Dialog
               open={open}
               onOpenChange={(o) => {
-                if (!o && !submitting) closeAndReset();
+                // Lock the dialog while a file is staged. The only ways out are
+                // the Cancel button or a successful submission; backdrop clicks,
+                // Escape, and the X button must not throw away the upload.
+                if (!o) return;
               }}
             >
-              <DialogContent className="sm:max-w-md">
+              <DialogContent
+                className="sm:max-w-md"
+                showCloseButton={false}
+              >
                 {verificationSent ? (
                   <>
                     <DialogHeader>
@@ -142,8 +172,8 @@ export function SellFlow() {
                 <DialogHeader>
                   <DialogTitle>Almost there</DialogTitle>
                   <DialogDescription>
-                    Last step: connect your bank with Stripe. Takes about 2
-                    minutes — your page goes live as soon as you finish.
+                    Last step: connect your bank with Stripe. Takes 2 minutes.
+                    Your page goes live when you finish.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -158,7 +188,7 @@ export function SellFlow() {
                       </p>
                       <div className="bg-hop-hover mt-1.5 h-1 overflow-hidden rounded-full">
                         <div
-                          className="h-full bg-emerald-500 transition-all duration-200"
+                          className="bg-hop-text h-full transition-all duration-200"
                           style={{ width: `${Math.round(progress)}%` }}
                         />
                       </div>
@@ -267,7 +297,15 @@ export function SellFlow() {
                   <div className="mt-2 flex items-center justify-between gap-3">
                     <button
                       type="button"
-                      onClick={closeAndReset}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Discard your upload? You'll need to re-upload the file to start over.",
+                          )
+                        ) {
+                          closeAndReset();
+                        }
+                      }}
                       disabled={submitting}
                       className="text-hop-muted hover:text-hop-text text-[0.8125rem] transition-colors disabled:opacity-50"
                     >

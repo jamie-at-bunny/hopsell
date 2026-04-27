@@ -12,7 +12,7 @@ export default function VerifyListing({
   url,
 }: VerifyListingProps) {
   return (
-    <EmailLayout preview={`Confirm your new Hopsell listing — ${productTitle}`}>
+    <EmailLayout preview={`Confirm your new Hopsell listing · ${productTitle}`}>
       <Heading style={styles.heading}>Confirm your new listing</Heading>
       <Text style={styles.paragraph}>
         Someone (hopefully you) just started a new listing on your Hopsell

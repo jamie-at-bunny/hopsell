@@ -20,7 +20,7 @@ function formatPrice(cents: number, currency: string): string {
 export function meta({ data }: Route.MetaArgs) {
   if (!data?.product) return [{ title: `${config.name}` }];
   return [
-    { title: `${data.product.title} — ${config.name}` },
+    { title: `${data.product.title} · ${config.name}` },
     {
       name: "description",
       content:
@@ -97,7 +97,7 @@ export default function ProductPage({ loaderData }: Route.ComponentProps) {
       };
 
   return (
-    <main className="text-hop-text mx-auto flex min-h-[80vh] max-w-md flex-col px-4 py-12">
+    <main className="text-hop-text mx-auto flex min-h-[80vh] max-w-md flex-col px-4 pt-24 pb-12">
       {isOwner && isPending && (
         <section className="bg-hop-surface border-hop-border mb-6 rounded-2xl border p-5">
           <div className="text-hop-muted mb-1.5 text-[10px] tracking-[0.18em] uppercase">

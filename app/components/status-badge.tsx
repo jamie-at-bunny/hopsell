@@ -3,7 +3,7 @@ import { cn } from "~/lib/utils";
 const variantStyles = {
   default: "bg-muted text-muted-foreground",
   primary: "bg-primary/10 text-primary",
-  success: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  success: "bg-foreground/10 text-foreground",
 };
 
 interface StatusBadgeProps {

@@ -16,7 +16,7 @@ export function ShareBlock({ url, title }: ShareBlockProps) {
     if (open) inputRef.current?.select();
   }, [open]);
 
-  const text = `${title} — Hopsell`;
+  const text = `${title} · Hopsell`;
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
 
