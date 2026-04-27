@@ -35,11 +35,23 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   });
   if (!product) throw new Response("Not Found", { status: 404 });
 
+  const url = new URL(request.url);
+  const stripeReturning =
+    url.searchParams.get("stripe") === "return" ||
+    url.searchParams.get("stripe") === "refresh";
+
   const session = await auth.api.getSession({ headers: request.headers });
   const viewerId = session?.user.id;
   const isOwner = !!viewerId && viewerId === product.userId;
 
-  if (isOwner && product.status === "pending_connect") {
+  // Self-heal Connect status when the seller is back from Stripe — fire even
+  // for unrecognized visitors, because the cross-origin redirect occasionally
+  // drops the session cookie and the seller would otherwise see a 404 on
+  // their own product.
+  if (
+    product.status === "pending_connect" &&
+    (isOwner || stripeReturning)
+  ) {
     const seller = await db.query.user.findFirst({
       where: eq(userTable.id, product.userId),
       columns: { stripeAccountId: true },
@@ -53,7 +65,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     }
   }
 
-  if (product.status !== "live" && !isOwner) {
+  // 404 only for products that are explicitly hidden (paused). A pending
+  // product is visible to anyone with the link as a "coming soon" page —
+  // safer than 404'ing the seller themselves when their cookie dropped.
+  if (product.status === "paused" && !isOwner) {
     throw new Response("Not Found", { status: 404 });
   }
 
@@ -98,7 +113,7 @@ export default function ProductPage({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="text-hop-text mx-auto flex min-h-[80vh] max-w-md flex-col px-4 pt-24 pb-12">
-      {isOwner && isPending && (
+      {(isOwner || justReturnedFromStripe) && isPending && (
         <section className="bg-hop-surface border-hop-border mb-6 rounded-2xl border p-5">
           <div className="text-hop-muted mb-1.5 text-[10px] tracking-[0.18em] uppercase">
             {banner.eyebrow}
