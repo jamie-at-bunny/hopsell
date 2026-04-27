@@ -1,10 +1,11 @@
-import { eq, and } from "drizzle-orm";
 import type { Route } from "./+types/api.webhooks.stripe-connect";
 import type Stripe from "stripe";
 import { stripe } from "~/lib/stripe.server";
-import { db } from "~/db/index.server";
-import { user as userTable } from "~/db/auth-schema";
-import { products } from "~/db/marketplace-schema";
+import { reconcileConnectAccount } from "~/lib/stripe-connect.server";
+
+export function loader() {
+  return new Response("Method Not Allowed", { status: 405 });
+}
 
 export async function action({ request }: Route.ActionArgs) {
   const sig = request.headers.get("stripe-signature");
@@ -25,34 +26,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (event.type === "account.updated") {
-    const account = event.data.object as Stripe.Account;
-    const isReady =
-      !!account.charges_enabled &&
-      !!account.payouts_enabled &&
-      !!account.details_submitted;
-
-    const updated = await db
-      .update(userTable)
-      .set({
-        chargesEnabled: !!account.charges_enabled,
-        payoutsEnabled: !!account.payouts_enabled,
-        stripeAccountStatus: isReady ? "active" : "pending",
-      })
-      .where(eq(userTable.stripeAccountId, account.id))
-      .returning();
-
-    const owner = updated[0];
-    if (isReady && owner) {
-      await db
-        .update(products)
-        .set({ status: "live" })
-        .where(
-          and(
-            eq(products.userId, owner.id),
-            eq(products.status, "pending_connect"),
-          ),
-        );
-    }
+    await reconcileConnectAccount(event.data.object as Stripe.Account);
   }
 
   return new Response(null, { status: 200 });

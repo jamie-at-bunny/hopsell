@@ -5,7 +5,7 @@ export default {
   out: "./drizzle",
   dialect: "turso",
   dbCredentials: {
-    url: process.env.BUNNY_DATABASE_URL,
+    url: process.env.BUNNY_DATABASE_URL || "dev.db",
     authToken: process.env.BUNNY_DATABASE_AUTH_TOKEN,
   },
 } satisfies Config;

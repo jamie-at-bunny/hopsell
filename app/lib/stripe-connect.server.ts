@@ -1,6 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import type Stripe from "stripe";
 import { db } from "~/db/index.server";
 import { user as userTable } from "~/db/auth-schema";
+import { products } from "~/db/marketplace-schema";
 import { stripe } from "~/lib/stripe.server";
 
 const baseURL = () =>
@@ -45,4 +47,47 @@ export async function createOnboardingLink(opts: {
   });
 
   return link.url;
+}
+
+export async function reconcileConnectAccount(
+  account: Stripe.Account,
+): Promise<void> {
+  const isReady =
+    !!account.charges_enabled &&
+    !!account.payouts_enabled &&
+    !!account.details_submitted;
+
+  const updated = await db
+    .update(userTable)
+    .set({
+      chargesEnabled: !!account.charges_enabled,
+      payoutsEnabled: !!account.payouts_enabled,
+      stripeAccountStatus: isReady ? "active" : "pending",
+    })
+    .where(eq(userTable.stripeAccountId, account.id))
+    .returning();
+
+  const owner = updated[0];
+  if (!isReady || !owner) return;
+
+  await db
+    .update(products)
+    .set({ status: "live" })
+    .where(
+      and(
+        eq(products.userId, owner.id),
+        eq(products.status, "pending_connect"),
+      ),
+    );
+}
+
+export async function reconcileConnectAccountById(
+  stripeAccountId: string,
+): Promise<void> {
+  try {
+    const account = await stripe().accounts.retrieve(stripeAccountId);
+    await reconcileConnectAccount(account);
+  } catch (err) {
+    console.error("[stripe-connect] reconcile failed:", err);
+  }
 }

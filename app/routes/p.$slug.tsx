@@ -4,6 +4,8 @@ import type { Route } from "./+types/p.$slug";
 import { auth } from "~/lib/auth.server";
 import { db } from "~/db/index.server";
 import { products } from "~/db/marketplace-schema";
+import { user as userTable } from "~/db/auth-schema";
+import { reconcileConnectAccountById } from "~/lib/stripe-connect.server";
 import { Button } from "~/components/ui/button";
 import { ShareBlock } from "~/components/share-block";
 import { config } from "~/lib/config";
@@ -28,7 +30,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const product = await db.query.products.findFirst({
+  let product = await db.query.products.findFirst({
     where: eq(products.slug, params.slug!),
   });
   if (!product) throw new Response("Not Found", { status: 404 });
@@ -36,6 +38,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers });
   const viewerId = session?.user.id;
   const isOwner = !!viewerId && viewerId === product.userId;
+
+  if (isOwner && product.status === "pending_connect") {
+    const seller = await db.query.user.findFirst({
+      where: eq(userTable.id, product.userId),
+      columns: { stripeAccountId: true },
+    });
+    if (seller?.stripeAccountId) {
+      await reconcileConnectAccountById(seller.stripeAccountId);
+      const refreshed = await db.query.products.findFirst({
+        where: eq(products.slug, params.slug!),
+      });
+      if (refreshed) product = refreshed;
+    }
+  }
 
   if (product.status !== "live" && !isOwner) {
     throw new Response("Not Found", { status: 404 });
