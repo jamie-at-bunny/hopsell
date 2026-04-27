@@ -14,7 +14,7 @@ export function meta() {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) throw redirect("/login");
+  if (!session) throw redirect("/");
 
   const myOrders = await db.query.orders.findMany({
     where: eq(orders.buyerUserId, session.user.id),

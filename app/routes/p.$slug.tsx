@@ -17,6 +17,18 @@ function formatPrice(cents: number, currency: string): string {
   }).format(cents / 100);
 }
 
+function formatBytes(bytes: number): string {
+  if (!bytes) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let v = bytes;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(v < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
 export function meta({ data }: Route.MetaArgs) {
   if (!data?.product) return [{ title: `${config.name}` }];
   return [
@@ -84,6 +96,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       priceCents: product.priceCents,
       currency: product.currency,
       status: product.status,
+      fileExtension: product.fileExtension,
+      fileSizeBytes: product.fileSizeBytes,
     },
     isOwner,
     shareUrl,
@@ -158,6 +172,13 @@ export default function ProductPage({ loaderData }: Route.ComponentProps) {
           {formatPrice(product.priceCents, product.currency)}
         </p>
 
+        <p className="text-hop-muted mt-2 text-[0.75rem] tabular-nums uppercase tracking-[0.12em]">
+          {product.fileExtension || "file"}
+          {product.fileSizeBytes
+            ? ` · ${formatBytes(product.fileSizeBytes)}`
+            : ""}
+        </p>
+
         {product.status === "live" && !isOwner ? (
           <form
             method="post"
@@ -174,14 +195,16 @@ export default function ProductPage({ loaderData }: Route.ComponentProps) {
               ? product.status === "live"
                 ? "This is your product"
                 : "Finish setup to enable"
-              : "Unavailable"}
+              : "Coming soon"}
           </Button>
         )}
 
         <p className="text-hop-muted mt-4 text-[0.75rem]">
           {isOwner
             ? "Share this link to start selling."
-            : "Secure payment · instant download"}
+            : product.status === "live"
+              ? "Secure payment · instant download"
+              : "This product isn't live yet. Check back shortly."}
         </p>
 
         {product.status === "live" && (

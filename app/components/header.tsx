@@ -3,6 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserCircleIcon,
   Logout01Icon,
+  InformationCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { signOut, useSession } from "~/lib/auth-client";
 import { config } from "~/lib/config";
@@ -30,9 +31,17 @@ export function Header() {
             trigger={
               <button
                 type="button"
-                className={`${pillBase} px-4 py-2 text-[13px] font-medium tracking-tight`}
+                aria-label="How it works"
+                className={`${pillBase} max-sm:size-10 sm:px-4 sm:py-2 sm:text-[13px] sm:font-medium sm:tracking-tight`}
               >
-                How it works
+                <span className="max-sm:hidden">How it works</span>
+                <span className="sm:hidden">
+                  <HugeiconsIcon
+                    icon={InformationCircleIcon}
+                    strokeWidth={1.6}
+                    size={20}
+                  />
+                </span>
               </button>
             }
           />

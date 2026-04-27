@@ -91,3 +91,49 @@ export async function reconcileConnectAccountById(
     console.error("[stripe-connect] reconcile failed:", err);
   }
 }
+
+export interface ConnectBalanceSummary {
+  currency: string;
+  availableCents: number;
+  pendingCents: number;
+}
+
+export async function getConnectBalance(
+  stripeAccountId: string,
+): Promise<ConnectBalanceSummary | null> {
+  try {
+    const balance = await stripe().balance.retrieve({
+      stripeAccount: stripeAccountId,
+    });
+    // Sum across all currencies; Hopsell is GBP-only so this is essentially
+    // the GBP figure. If multi-currency is added later, group by currency.
+    const sum = (
+      arr: Array<{ amount: number; currency: string }>,
+    ): { amount: number; currency: string } => {
+      const total = arr.reduce((acc, b) => acc + b.amount, 0);
+      return { amount: total, currency: arr[0]?.currency ?? "gbp" };
+    };
+    const available = sum(balance.available ?? []);
+    const pending = sum(balance.pending ?? []);
+    return {
+      currency: available.currency || pending.currency,
+      availableCents: available.amount,
+      pendingCents: pending.amount,
+    };
+  } catch (err) {
+    console.error("[stripe-connect] balance fetch failed:", err);
+    return null;
+  }
+}
+
+export async function createExpressDashboardLink(
+  stripeAccountId: string,
+): Promise<string | null> {
+  try {
+    const link = await stripe().accounts.createLoginLink(stripeAccountId);
+    return link.url;
+  } catch (err) {
+    console.error("[stripe-connect] login link failed:", err);
+    return null;
+  }
+}
